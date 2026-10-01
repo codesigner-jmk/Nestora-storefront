@@ -1,0 +1,115 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { requireCustomer } from "@/lib/auth/customer";
+
+const cartSchema = z.object({
+  productId: z.string().uuid(),
+  variantId: z.string().uuid().optional().or(z.literal("")),
+  quantity: z.coerce.number().int().min(1),
+  returnTo: z.string().startsWith("/").default("/cart"),
+});
+
+export async function addToCart(formData: FormData) {
+  const parsed = cartSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect("/cart?error=invalid");
+  const { supabase, user } = await requireCustomer(parsed.data.returnTo);
+  const variantId = parsed.data.variantId || null;
+  const { data: product } = await supabase.from("products").select("id,stock_quantity,is_active").eq("id", parsed.data.productId).maybeSingle();
+  if (!product?.is_active) redirect("/cart?error=unavailable");
+  let available = product.stock_quantity;
+  if (variantId) {
+    const { data: variant } = await supabase.from("product_variants").select("id,stock_quantity").eq("id", variantId).eq("product_id", product.id).maybeSingle();
+    if (!variant) redirect("/cart?error=unavailable");
+    available = variant.stock_quantity;
+  }
+  const { data: cart, error: cartError } = await supabase.from("carts").upsert({ user_id: user.id }, { onConflict: "user_id" }).select("id").single();
+  if (cartError || !cart) redirect("/cart?error=save");
+  const { data: existing } = await supabase.from("cart_items").select("id,quantity").eq("cart_id", cart.id).eq("product_id", product.id).is("variant_id", variantId).maybeSingle();
+  const quantity = parsed.data.quantity + (existing?.quantity ?? 0);
+  if (quantity > available) redirect("/cart?error=stock");
+  const result = existing
+    ? await supabase.from("cart_items").update({ quantity, updated_at: new Date().toISOString() }).eq("id", existing.id)
+    : await supabase.from("cart_items").insert({ cart_id: cart.id, product_id: product.id, variant_id: variantId, quantity });
+  if (result.error) {
+    console.error("Cart update failed:", result.error.message);
+    redirect("/cart?error=save");
+  }
+  revalidatePath("/cart");
+  revalidatePath("/checkout");
+  redirect("/cart?updated=1");
+}
+
+const itemSchema = z.string().uuid();
+
+export async function removeCartItem(formData: FormData) {
+  const itemId = itemSchema.safeParse(formData.get("itemId"));
+  if (!itemId.success) redirect("/cart?error=invalid");
+  const { supabase } = await requireCustomer("/cart");
+  const { error } = await supabase.from("cart_items").delete().eq("id", itemId.data);
+  if (error) {
+    console.error("Cart item removal failed:", error.message);
+    redirect("/cart?error=save");
+  }
+  revalidatePath("/cart");
+  revalidatePath("/checkout");
+}
+
+export async function setCartQuantity(formData: FormData) {
+  const parsed = z.object({ itemId: z.string().uuid(), quantity: z.coerce.number().int().min(1) }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect("/cart?error=invalid");
+  const { supabase } = await requireCustomer("/cart");
+  const { data: item } = await supabase.from("cart_items").select("id,product_id,variant_id,product:products(stock_quantity,is_active),variant:product_variants(stock_quantity)").eq("id", parsed.data.itemId).maybeSingle();
+  if (!item || !item.product?.is_active) redirect("/cart?error=unavailable");
+  const available = item.variant_id ? item.variant?.stock_quantity : item.product.stock_quantity;
+  if (parsed.data.quantity > available) redirect("/cart?error=stock");
+  const { error } = await supabase.from("cart_items").update({ quantity: parsed.data.quantity, updated_at: new Date().toISOString() }).eq("id", parsed.data.itemId);
+  if (error) {
+    console.error("Cart quantity update failed:", error.message);
+    redirect("/cart?error=save");
+  }
+  revalidatePath("/cart");
+  revalidatePath("/checkout");
+}
+
+type WishlistActionState = { status: "idle" | "success" | "error"; message: string };
+
+export async function addToWishlist(_previousState: WishlistActionState, formData: FormData): Promise<WishlistActionState> {
+  const productId = z.string().uuid().safeParse(formData.get("productId"));
+  if (!productId.success) return { status: "error", message: "We couldn’t save this piece. Please try again." };
+  const rawReturnTo = formData.get("returnTo");
+  const returnTo = typeof rawReturnTo === "string" && rawReturnTo.startsWith("/") && !rawReturnTo.startsWith("//") ? rawReturnTo : "/wishlist";
+  const { supabase, user } = await requireCustomer(returnTo);
+  const { data: product } = await supabase.from("products").select("id,is_active").eq("id", productId.data).maybeSingle();
+  if (!product?.is_active) return { status: "error", message: "This piece is no longer available to save." };
+  const { data: wishlist, error: wishlistError } = await supabase.from("wishlists").upsert({ user_id: user.id }, { onConflict: "user_id" }).select("id").single();
+  if (wishlistError || !wishlist) return { status: "error", message: "We couldn’t save this piece. Please try again." };
+  const { error } = await supabase.from("wishlist_items").upsert({ wishlist_id: wishlist.id, product_id: product.id }, { onConflict: "wishlist_id,product_id", ignoreDuplicates: true });
+  if (error) {
+    console.error("Wishlist update failed:", error.message);
+    return { status: "error", message: "We couldn’t save this piece. Please try again." };
+  }
+  revalidatePath("/wishlist");
+  return { status: "success", message: "Added to your wishlist." };
+}
+
+export async function removeWishlistItem(formData: FormData) {
+  const itemId = itemSchema.safeParse(formData.get("itemId"));
+  if (!itemId.success) redirect("/wishlist?error=invalid");
+  const { supabase } = await requireCustomer("/wishlist");
+  const { error } = await supabase.from("wishlist_items").delete().eq("id", itemId.data);
+  if (error) {
+    console.error("Wishlist item removal failed:", error.message);
+    redirect("/wishlist?error=save");
+  }
+  revalidatePath("/wishlist");
+}
+
+export async function signOut() {
+  const { supabase } = await requireCustomer("/account");
+  const { error } = await supabase.auth.signOut();
+  if (error) console.error("Sign out failed:", error.message);
+  redirect("/");
+}
