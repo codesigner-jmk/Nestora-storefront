@@ -61,9 +61,16 @@ export async function setCartQuantity(formData: FormData) {
   const parsed = z.object({ itemId: z.string().uuid(), quantity: z.coerce.number().int().min(1) }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/cart?error=invalid");
   const { supabase } = await requireCustomer("/cart");
-  const { data: item } = await supabase.from("cart_items").select("id,product_id,variant_id,product:products(stock_quantity,is_active),variant:product_variants(stock_quantity)").eq("id", parsed.data.itemId).maybeSingle();
-  if (!item || !item.product?.is_active) redirect("/cart?error=unavailable");
-  const available = item.variant_id ? item.variant?.stock_quantity : item.product.stock_quantity;
+  const { data: item } = await supabase.from("cart_items").select("id,product_id,variant_id").eq("id", parsed.data.itemId).maybeSingle();
+  if (!item) redirect("/cart?error=unavailable");
+  const { data: product } = await supabase.from("products").select("stock_quantity,is_active").eq("id", item.product_id).maybeSingle();
+  if (!product?.is_active) redirect("/cart?error=unavailable");
+  let available = product.stock_quantity;
+  if (item.variant_id) {
+    const { data: variant } = await supabase.from("product_variants").select("stock_quantity").eq("id", item.variant_id).eq("product_id", item.product_id).maybeSingle();
+    if (!variant) redirect("/cart?error=unavailable");
+    available = variant.stock_quantity;
+  }
   if (parsed.data.quantity > available) redirect("/cart?error=stock");
   const { error } = await supabase.from("cart_items").update({ quantity: parsed.data.quantity, updated_at: new Date().toISOString() }).eq("id", parsed.data.itemId);
   if (error) {
