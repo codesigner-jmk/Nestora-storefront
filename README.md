@@ -1,21 +1,23 @@
 # NESTORA
 
-Customer-facing furniture storefront built with Next.js App Router, TypeScript, Tailwind CSS, Supabase and Nigerian Naira pricing.
+NESTORA is a responsive furniture and home-living storefront for customers in Nigeria. The site is built with Next.js App Router, React, TypeScript, Tailwind CSS and Supabase, with product prices displayed in Nigerian naira.
 
-## What is here
+## Storefront
 
-- Responsive homepage in the required PRD order.
-- Product catalogue, category and product detail routes backed by Supabase queries.
-- Initial database schema, RLS policies, profile trigger and starter catalogue in `supabase/migrations`.
-- Google OAuth server flow and Supabase SSR cookie handling foundation.
-- Newsletter subscription action with duplicate-safe persistence.
-- Empty catalogue states when Supabase is not connected; the UI does not substitute in-memory commerce data.
+- A split-layout homepage hero with three rotating interior photographs and accessible slideshow controls.
+- A light and dark theme switch that follows the device preference on first visit and remembers a browser's choice.
+- Circular category navigation, two room collection banners, a curated Best Sellers selection, an introduction to NESTORA, a trust stripe, featured products, the brand story and newsletter signup.
+- A searchable and filterable product catalogue, category pages and product details backed by Supabase.
+- Google sign-in, persistent customer wishlists and carts, checkout, order history and order details.
+- Order confirmation emails through Resend.
 
-The eight starter products, prices and stock counts are an initial proposed catalogue, authored for NESTORA. Verify those details against supplier quotes and actual inventory before accepting orders. Starter imagery currently uses remote Unsplash photo URLs; replace the references with approved product photos uploaded to the Supabase `product-images` bucket before launch.
+## Catalogue and imagery
+
+The opening catalogue contains 16 furniture and home products across the available categories. Product prices and stock quantities are proposed starting values; confirm them with suppliers and actual inventory before taking orders. The opening Best Sellers group is selected manually for merchandising and is not calculated from sales history. Product and lifestyle photography currently uses remote Unsplash image URLs. Replace these with approved, rights-cleared product photography as it becomes available.
 
 ## Run locally
 
-Install Node.js 20.9 or newer and npm, then from this folder:
+Install Node.js 20.9 or newer. In this folder, install the packages and create your local settings file:
 
 ```powershell
 npm install
@@ -23,24 +25,27 @@ Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:3000`. Without Supabase environment values, public pages show intentional empty catalogue states and protected pages lead to sign-in setup.
+Open `http://localhost:3000`. Add the service credentials below to `.env.local` to connect the storefront. Keep that file private; it is excluded from Git. Without Supabase settings, catalogue pages show an intentional empty state and protected customer features require configuration.
 
-## Supabase
+## Supabase setup
 
-1. Create a Supabase project.
-2. Copy the Project URL and Publishable key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
-3. In Supabase Dashboard → SQL Editor, run `supabase/migrations/202610010001_initial_schema.sql`, then `supabase/migrations/202610010002_checkout_function.sql`, then `supabase/migrations/202610010003_storefront_preferences.sql`, then `supabase/migrations/202610010004_distinct_homepage_products.sql`, then `supabase/migrations/202610010005_add_eight_catalogue_products.sql`, then any newer migration files in timestamp order. The latest checkout fix is `supabase/migrations/202610020006_fix_checkout_ambiguous_id.sql`.
-4. Keep `.env.local` private. It is ignored by Git. Never put a service-role key in this app.
+1. Create a Supabase project and copy its Project URL and Publishable key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+2. In the Supabase SQL Editor, run the files in `supabase/migrations` in timestamp order, including `202610020006_fix_checkout_ambiguous_id.sql`.
+3. Never put a Supabase service-role key in browser code or commit local credentials.
 
-The standard delivery fee is configured as ₦6,500 (650,000 kobo) by the storefront preferences migration. Order creation reads this setting server-side. The opening Best Sellers selection is manually curated and is not computed from sales counts.
+Checkout uses one standard delivery charge of ₦6,500 per order. The fee is stored in Supabase and included in the server-calculated order total. New orders begin with `pending` status.
 
-## Secrets
+## Authentication and email
 
-Resend and business-owner settings belong only in local/server environment variables:
+Configure Google OAuth in Google Cloud Console and enable the Google provider in Supabase Auth. Keep the Google client secret in the Supabase provider settings.
+
+Add these server-side environment variables for order emails and site links:
 
 - `RESEND_API_KEY`
-- `RESEND_FROM_EMAIL` (must use a sender address allowed by Resend; use your verified domain for customer emails)
+- `RESEND_FROM_EMAIL` — a sender address permitted by Resend; customer email delivery requires a verified sending domain.
 - `BUSINESS_OWNER_EMAIL`
-- `SITE_URL` (server-only base URL used for OAuth and order links)
+- `SITE_URL` — the deployed site URL in production, or `http://localhost:3000` for local development.
 
-Google OAuth is configured through Google Cloud and the Supabase Auth provider. The Google client secret is stored in Supabase, never in browser code.
+## Deployment
+
+The storefront can be deployed to Vercel. Add the same environment variables to the Vercel project, using the production site URL for `SITE_URL`, then deploy the connected GitHub branch.
