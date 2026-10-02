@@ -18,8 +18,24 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const { supabase, user } = await requireCustomer("/checkout");
   const { error: reason } = await searchParams;
   const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).maybeSingle();
-  const { data: items } = cart ? await supabase.from("cart_items").select("id,quantity,product:products(name,slug,price_kobo,is_active,product_images(image_url,alt_text,display_order)),variant:product_variants(name,value,price_modifier_kobo)").eq("cart_id", cart.id) : { data: [] };
-  const lines = (items ?? []).filter((item) => item.product?.is_active);
+  const { data: items } = cart
+    ? await supabase.from("cart_items").select("id,quantity,product_id,variant_id").eq("cart_id", cart.id)
+    : { data: [] };
+  const productIds = [...new Set((items ?? []).map((item) => item.product_id))];
+  const variantIds = [...new Set((items ?? []).flatMap((item) => item.variant_id ? [item.variant_id] : []))];
+  const { data: products } = productIds.length
+    ? await supabase.from("products").select("id,name,slug,price_kobo,is_active,product_images(image_url,alt_text,display_order)").in("id", productIds)
+    : { data: [] };
+  const { data: variants } = variantIds.length
+    ? await supabase.from("product_variants").select("id,name,value,price_modifier_kobo").in("id", variantIds)
+    : { data: [] };
+  const productsById = new Map((products ?? []).map((product) => [product.id, product] as const));
+  const variantsById = new Map((variants ?? []).map((variant) => [variant.id, variant] as const));
+  const lines = (items ?? []).flatMap((item) => {
+    const product = productsById.get(item.product_id);
+    if (!product?.is_active) return [];
+    return [{ ...item, product, variant: item.variant_id ? variantsById.get(item.variant_id) ?? null : null }];
+  });
   const { data: settings } = await supabase.from("store_settings").select("standard_delivery_fee_kobo").eq("id", true).maybeSingle();
   const subtotal = lines.reduce((sum, line) => sum + (line.product.price_kobo + (line.variant?.price_modifier_kobo ?? 0)) * line.quantity, 0);
   const fee = settings?.standard_delivery_fee_kobo ?? null;

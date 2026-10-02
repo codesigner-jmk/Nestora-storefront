@@ -20,15 +20,32 @@ export default async function CartPage({ searchParams }: { searchParams: SearchP
   const params = await searchParams;
   const { data: cart } = await supabase.from("carts").select("id").eq("user_id", user.id).maybeSingle();
   const { data: items } = cart
-    ? await supabase.from("cart_items").select("id,quantity,product:products(id,name,slug,price_kobo,stock_quantity,is_active,product_images(image_url,alt_text,display_order)),variant:product_variants(id,name,value,price_modifier_kobo,stock_quantity)").eq("cart_id", cart.id)
+    ? await supabase.from("cart_items").select("id,quantity,product_id,variant_id").eq("cart_id", cart.id)
     : { data: [] };
+  const productIds = [...new Set((items ?? []).map((item) => item.product_id))];
+  const variantIds = [...new Set((items ?? []).flatMap((item) => item.variant_id ? [item.variant_id] : []))];
+  const { data: products } = productIds.length
+    ? await supabase.from("products").select("id,name,slug,price_kobo,stock_quantity,is_active,product_images(image_url,alt_text,display_order)").in("id", productIds)
+    : { data: [] };
+  const { data: variants } = variantIds.length
+    ? await supabase.from("product_variants").select("id,name,value,price_modifier_kobo,stock_quantity").in("id", variantIds)
+    : { data: [] };
+  const productsById = new Map((products ?? []).map((product) => [product.id, product] as const));
+  const variantsById = new Map((variants ?? []).map((variant) => [variant.id, variant] as const));
   const { data: settings } = await supabase.from("store_settings").select("standard_delivery_fee_kobo").eq("id", true).maybeSingle();
-  const lines = (items ?? []).filter((item) => item.product?.is_active).map((item) => ({
-    ...item,
-    unitPrice: item.product.price_kobo + (item.variant?.price_modifier_kobo ?? 0),
-    available: item.variant?.stock_quantity ?? item.product.stock_quantity,
-    image: [...(item.product.product_images ?? [])].sort((a, b) => a.display_order - b.display_order)[0],
-  }));
+  const lines = (items ?? []).flatMap((item) => {
+    const product = productsById.get(item.product_id);
+    if (!product?.is_active) return [];
+    const variant = item.variant_id ? variantsById.get(item.variant_id) ?? null : null;
+    return [{
+      ...item,
+      product,
+      variant,
+      unitPrice: product.price_kobo + (variant?.price_modifier_kobo ?? 0),
+      available: variant?.stock_quantity ?? product.stock_quantity,
+      image: [...(product.product_images ?? [])].sort((a, b) => a.display_order - b.display_order)[0],
+    }];
+  });
   const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
 
   return (
