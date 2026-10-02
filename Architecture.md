@@ -2814,7 +2814,7 @@ MAILGUN_FROM_EMAIL=
 
 BUSINESS_OWNER_EMAIL=
 
-NEXT_PUBLIC_SITE_URL=
+SITE_URL=
 
 Google OAuth credentials are configured through the appropriate Supabase/Google OAuth configuration rather than exposing the Google client secret to the browser.
 

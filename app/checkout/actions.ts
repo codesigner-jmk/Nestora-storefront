@@ -69,7 +69,7 @@ export async function createOrder(formData: FormData) {
   const { data: orderDetails } = await supabase.from("orders").select("subtotal_kobo,delivery_fee_kobo,total_kobo,delivery_address,delivery_city,delivery_state,delivery_notes,created_at").eq("id", order.id).eq("user_id", user.id).maybeSingle();
   const itemHtml = items.map((item) => `<li>${escapeHtml(item.product_name)}${item.variant_name ? ` (${escapeHtml(item.variant_name)})` : ""} × ${item.quantity} — ₦${(item.subtotal_kobo / 100).toLocaleString("en-NG")}</li>`).join("");
   const delivery = orderDetails ? `${escapeHtml(orderDetails.delivery_address)}, ${escapeHtml(orderDetails.delivery_city)}, ${escapeHtml(orderDetails.delivery_state)}` : "See your order details";
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
   const orderUrl = `${siteUrl.replace(/\/$/, "")}/account/orders/${order.id}`;
   const totalBlock = `<p>Subtotal: ₦${((orderDetails?.subtotal_kobo ?? order.subtotal_kobo) / 100).toLocaleString("en-NG")}</p><p>Delivery: ₦${((orderDetails?.delivery_fee_kobo ?? order.delivery_fee_kobo) / 100).toLocaleString("en-NG")}</p><p><strong>Total: ₦${((orderDetails?.total_kobo ?? order.total_kobo) / 100).toLocaleString("en-NG")}</strong></p>`;
   const orderDate = new Intl.DateTimeFormat("en-NG", { dateStyle: "long", timeZone: "Africa/Lagos" }).format(new Date(orderDetails?.created_at ?? Date.now()));

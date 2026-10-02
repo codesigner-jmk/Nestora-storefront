@@ -794,7 +794,7 @@ MAILGUN_FROM_EMAIL
 
 BUSINESS_OWNER_EMAIL
 
-NEXT_PUBLIC_SITE_URL
+SITE_URL
 
 Use the project's current Supabase key naming if the platform has moved to newer publishable-key terminology.
 

@@ -11,7 +11,7 @@ export async function signInWithGoogle(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   if (!supabase) redirect("/login?error=setup");
   const next = safePath(String(formData.get("next") ?? "/account"));
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
   const callbackUrl = new URL("/auth/callback", siteUrl);
   callbackUrl.searchParams.set("next", next);
   const { data, error } = await supabase.auth.signInWithOAuth({

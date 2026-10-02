@@ -43,6 +43,6 @@ Mailgun and business-owner settings belong only in local/server environment vari
 - `MAILGUN_API_BASE_URL` (use Mailgun's regional API host if your account is in the EU)
 - `MAILGUN_FROM_EMAIL`
 - `BUSINESS_OWNER_EMAIL`
-- `NEXT_PUBLIC_SITE_URL`
+- `SITE_URL` (server-only base URL used for OAuth and order links)
 
 Google OAuth is configured through Google Cloud and the Supabase Auth provider. The Google client secret is stored in Supabase, never in browser code.
