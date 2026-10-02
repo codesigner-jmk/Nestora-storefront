@@ -168,7 +168,7 @@ Warm Beige
 
 Accent:
 
-Muted Earth Tone
+Muted Olive Green
 
 Avoid pure black as the dominant text colour.
 
@@ -188,7 +188,9 @@ Border \#E5E1D8
 
 Muted Surface \#EFEAE1
 
-Accent \#8A6A4A
+Olive Accent \#626B47
+
+Soft Olive Surface \#E9ECDF
 
 These values are starting tokens, not a requirement to use these exact hexadecimal values if the final Figma design establishes a refined palette
 

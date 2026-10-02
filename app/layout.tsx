@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
@@ -15,7 +16,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en-NG">
+    <html lang="en-NG" suppressHydrationWarning>
+      <head>
+        <Script id="nestora-theme-init" strategy="beforeInteractive">{`(() => {
+          try {
+            const savedTheme = localStorage.getItem("nestora-theme");
+            const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            document.documentElement.dataset.theme = savedTheme === "light" || savedTheme === "dark"
+              ? savedTheme
+              : systemPrefersDark ? "dark" : "light";
+          } catch {
+            document.documentElement.dataset.theme = "light";
+          }
+        })();`}</Script>
+      </head>
       <body>
         <SiteHeader />
         <main>{children}</main>

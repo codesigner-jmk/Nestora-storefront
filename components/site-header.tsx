@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BagIcon, HeartIcon, SearchIcon } from "@/components/icons";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function SiteHeader() {
   return (
@@ -15,6 +16,7 @@ export function SiteHeader() {
           <Link className="icon-link search-link" href="/shop" aria-label="Search furniture"><SearchIcon /></Link>
           <Link className="icon-link" href="/wishlist" aria-label="Wishlist"><HeartIcon /></Link>
           <Link className="icon-link bag-link" href="/cart" aria-label="Shopping bag"><BagIcon /></Link>
+          <ThemeToggle />
           <Link className="account-link" href="/account">Account</Link>
         </div>
       </div>
