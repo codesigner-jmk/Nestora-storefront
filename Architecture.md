@@ -92,7 +92,7 @@ Sensitive credentials must never be exposed to browser JavaScript.
 
 Examples:
 
-- Mailgun API key
+- Resend API key
 - Server-only Supabase credentials, if ever required
 - Private service credentials
 
@@ -201,9 +201,9 @@ A new customer account is created automatically when a user authenticates throug
 
 ## 3.4 Email
 
-### Mailgun
+### Resend
 
-Mailgun is responsible for transactional email.
+Resend is responsible for transactional email.
 
 V1 sends order confirmation emails to:
 
@@ -212,7 +212,7 @@ V1 sends order confirmation emails to:
 
 Email sending must happen on the server.
 
-The browser must never call Mailgun directly.
+The browser must never call Resend directly.
 
 ## 3.5 Deployment
 
@@ -238,7 +238,7 @@ Supabase
 
 ↓
 
-Mailgun
+Resend
 
 # 4. System Architecture
 
@@ -272,7 +272,7 @@ Mailgun
 
 ┌────────────┐ ┌─────────────┐ ┌─────────────┐
 
-│ Supabase │ │ Mailgun │ │ Google │
+│ Supabase │ │ Resend │ │ Google │
 
 │ PostgreSQL │ │ Email │ │ OAuth │
 
@@ -2134,7 +2134,7 @@ Send business-owner email
 
 Record email result
 
-Mailgun credentials must remain server-side.
+Resend credentials must remain server-side.
 
 # 49. Customer Order Email
 
@@ -2612,7 +2612,7 @@ lib/
 
 ├── email/
 
-│ ├── mailgun.ts
+│ ├── resend.ts
 
 │ └── templates/
 
@@ -2806,11 +2806,9 @@ NEXT_PUBLIC_SUPABASE_URL=
 
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 
-MAILGUN_API_KEY=
+RESEND_API_KEY=
 
-MAILGUN_DOMAIN=
-
-MAILGUN_FROM_EMAIL=
+RESEND_FROM_EMAIL=
 
 BUSINESS_OWNER_EMAIL=
 
@@ -2873,7 +2871,7 @@ The application must:
 - Enable RLS
 - Validate user ownership
 - Validate all mutations
-- Keep Mailgun credentials server-side
+- Keep Resend credentials server-side
 - Never trust client prices
 - Never trust client totals
 - Validate stock server-side
@@ -3071,7 +3069,7 @@ Server-side errors should be logged without exposing sensitive information.
 Do not log:
 
 - OAuth secrets
-- Mailgun API keys
+- Resend API keys
 - Authentication tokens
 - Passwords
 - Sensitive customer information unnecessarily
@@ -3249,7 +3247,7 @@ Order creation must be atomic.
 
 ### Rule 7
 
-Mailgun credentials must remain server-side.
+Resend credentials must remain server-side.
 
 ### Rule 8
 
@@ -3286,8 +3284,8 @@ The V1 architecture is considered implemented when:
 - Cart is cleared after successful order creation
 - Customer orders are retrievable
 - Customer order details are retrievable
-- Mailgun sends customer confirmation
-- Mailgun sends business-owner confirmation
+- Resend sends customer confirmation
+- Resend sends business-owner confirmation
 - Email results are logged where implemented
 - Newsletter subscriptions persist
 - Protected routes are secured

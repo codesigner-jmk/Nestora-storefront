@@ -19,19 +19,20 @@ function escapeHtml(value: string) {
 }
 
 async function sendMail(to: string, subject: string, html: string) {
-  const apiKey = process.env.MAILGUN_API_KEY;
-  const domain = process.env.MAILGUN_DOMAIN;
-  const from = process.env.MAILGUN_FROM_EMAIL;
-  if (!apiKey || !domain || !from || !to) throw new Error("mail_configuration_missing");
-  const body = new URLSearchParams({ from, to, subject, html });
-  const apiBase = process.env.MAILGUN_API_BASE_URL ?? "https://api.mailgun.net";
-  const response = await fetch(`${apiBase}/v3/${encodeURIComponent(domain)}/messages`, {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from || !to) throw new Error("resend_configuration_missing");
+  const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { Authorization: `Basic ${Buffer.from(`api:${apiKey}`).toString("base64")}`, "Content-Type": "application/x-www-form-urlencoded" },
-    body,
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: [to], subject, html }),
     cache: "no-store",
   });
-  if (!response.ok) throw new Error("mail_delivery_failed");
+  if (!response.ok) {
+    const responseBody = await response.json().catch(() => null) as { message?: unknown } | null;
+    const providerMessage = typeof responseBody?.message === "string" ? responseBody.message.slice(0, 300) : "Request rejected";
+    throw new Error(`resend_http_${response.status}: ${providerMessage}`);
+  }
 }
 
 export async function createOrder(formData: FormData) {
@@ -87,9 +88,10 @@ export async function createOrder(formData: FormData) {
       if (linesError || !orderDetails) throw new Error("order_email_data_unavailable");
       await sendMail(recipient.email, recipient.subject, recipient.type === "customer" ? customerHtml : ownerHtml);
       if (recipient.type === "customer") customerEmailSent = true;
-    } catch {
+    } catch (error) {
       status = "failed";
-      failure = "Delivery failed or Mailgun configuration is incomplete.";
+      failure = error instanceof Error ? error.message.slice(0, 500) : "resend_unknown_error";
+      console.error("Order email failed:", { recipientType: recipient.type, reason: failure });
     }
     const { error: logError } = await supabase.rpc("record_order_email_log", {
       p_order_id: order.id, p_recipient_type: recipient.type, p_recipient_email: recipient.email || "not-configured", p_status: status, p_error_message: failure,

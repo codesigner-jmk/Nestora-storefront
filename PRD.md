@@ -99,7 +99,7 @@ This must demonstrate that the application can:
 - Cart persistence
 - Wishlist persistence
 - Customer profiles
-- Mailgun email integration
+- Resend email integration
 
 ### Authentication
 
@@ -648,7 +648,7 @@ customer@email.com
 
 Email delivery will use:
 
-**Mailgun**
+**Resend**
 
 Two confirmation emails must be sent after a successful order.
 
@@ -1105,11 +1105,11 @@ Sensitive credentials must never be exposed in client-side code.
 
 Examples:
 
-MAILGUN_API_KEY
+RESEND_API_KEY
 
-MAILGUN_DOMAIN
+RESEND_FROM_EMAIL
 
-MAILGUN credentials
+Resend credentials
 
 Supabase server/secret credentials
 
@@ -1142,13 +1142,13 @@ These must be stored as environment variables/server-side secrets.
 
 ## Email
 
-- Mailgun
+- Resend
 
 ## Deployment
 
 - Vercel
 - Supabase
-- Mailgun
+- Resend
 
 ## Version Control
 
@@ -1207,7 +1207,7 @@ Wishlist / Orders
 
 ▼
 
-Mailgun
+Resend
 
 │
 
@@ -1638,4 +1638,4 @@ The application must perform these functions reliably while protecting customer 
 
 > **NESTORA is a customer-facing furniture e-commerce web application that allows customers to discover furniture, authenticate with Google, save products to a wishlist, manage a persistent shopping cart, place orders, receive email confirmations, and view their previous orders.**
 >
-> **Supabase provides the database, authentication, storage and database security layer. Google Cloud provides the OAuth credentials for Google authentication. Mailgun handles transactional order emails.**
+> **Supabase provides the database, authentication, storage and database security layer. Google Cloud provides the OAuth credentials for Google authentication. Resend handles transactional order emails.**

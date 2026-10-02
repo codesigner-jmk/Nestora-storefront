@@ -720,13 +720,13 @@ The customer must be able to see the current status of their order.
 
 # 26. Email Rules
 
-Mailgun is used for transactional email.
+Resend is used for transactional email.
 
 Email sending must happen server-side.
 
 Never expose:
 
-MAILGUN_API_KEY
+RESEND_API_KEY
 
 to the browser.
 
@@ -786,11 +786,9 @@ NEXT_PUBLIC_SUPABASE_URL
 
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-MAILGUN_API_KEY
+RESEND_API_KEY
 
-MAILGUN_DOMAIN
-
-MAILGUN_FROM_EMAIL
+RESEND_FROM_EMAIL
 
 BUSINESS_OWNER_EMAIL
 
@@ -807,7 +805,7 @@ Private secrets must remain server-only.
 Never place:
 
 - Supabase service-role key
-- Mailgun API key
+- Resend API key
 - Google client secret
 - Other private credentials
 
