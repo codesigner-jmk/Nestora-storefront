@@ -1,0 +1,6 @@
+import { Text, View } from "react-native";
+import { useLocalSearchParams, router } from "expo-router";
+import { Action, Heading, Page } from "../../components/Screen";
+import { formatNaira } from "../../lib/format";
+import { useTheme } from "../../lib/theme";
+export default function Success(){const t=useTheme();const{id,number,total,emailSent}=useLocalSearchParams<{id:string;number:string;total:string;emailSent:string}>();return <Page><View style={{paddingTop:48,gap:18}}><Heading eyebrow="NESTORA order">Your order has been placed.</Heading><Text style={{color:t.secondary,lineHeight:23}}>Thank you. We’ve received your order.{emailSent==="true"?" A confirmation has been sent to your email.":" You can find the details in your order history."}</Text><View style={{padding:18,backgroundColor:t.surface,borderWidth:1,borderColor:t.border,gap:9}}><Text style={{color:t.secondary}}>Order number</Text><Text style={{color:t.text,fontSize:18}}>{number}</Text><Text style={{color:t.secondary,marginTop:8}}>Total</Text><Text style={{color:t.text,fontSize:18}}>{formatNaira(Number(total))}</Text></View><Action label="View order details" onPress={()=>router.replace({pathname:"/orders/[orderId]",params:{orderId:id}})}/><Action label="Continue shopping" secondary onPress={()=>router.replace("/(tabs)/shop")}/></View></Page>;}

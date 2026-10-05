@@ -15,27 +15,11 @@ const cartSchema = z.object({
 export async function addToCart(formData: FormData) {
   const parsed = cartSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/cart?error=invalid");
-  const { supabase, user } = await requireCustomer(parsed.data.returnTo);
-  const variantId = parsed.data.variantId || null;
-  const { data: product } = await supabase.from("products").select("id,stock_quantity,is_active").eq("id", parsed.data.productId).maybeSingle();
-  if (!product?.is_active) redirect("/cart?error=unavailable");
-  let available = product.stock_quantity;
-  if (variantId) {
-    const { data: variant } = await supabase.from("product_variants").select("id,stock_quantity").eq("id", variantId).eq("product_id", product.id).maybeSingle();
-    if (!variant) redirect("/cart?error=unavailable");
-    available = variant.stock_quantity;
-  }
-  const { data: cart, error: cartError } = await supabase.from("carts").upsert({ user_id: user.id }, { onConflict: "user_id" }).select("id").single();
-  if (cartError || !cart) redirect("/cart?error=save");
-  const { data: existing } = await supabase.from("cart_items").select("id,quantity").eq("cart_id", cart.id).eq("product_id", product.id).is("variant_id", variantId).maybeSingle();
-  const quantity = parsed.data.quantity + (existing?.quantity ?? 0);
-  if (quantity > available) redirect("/cart?error=stock");
-  const result = existing
-    ? await supabase.from("cart_items").update({ quantity, updated_at: new Date().toISOString() }).eq("id", existing.id)
-    : await supabase.from("cart_items").insert({ cart_id: cart.id, product_id: product.id, variant_id: variantId, quantity });
-  if (result.error) {
-    console.error("Cart update failed:", result.error.message);
-    redirect("/cart?error=save");
+  const { supabase } = await requireCustomer(parsed.data.returnTo);
+  const { error } = await supabase.rpc("add_to_cart", { p_product_id: parsed.data.productId, p_variant_id: parsed.data.variantId || null, p_quantity: parsed.data.quantity });
+  if (error) {
+    const reason = error.message.includes("insufficient_stock") ? "stock" : error.message.includes("unavailable") ? "unavailable" : "save";
+    redirect(`${parsed.data.returnTo}?error=${reason}`);
   }
   revalidatePath("/cart");
   revalidatePath("/checkout");
@@ -48,7 +32,7 @@ export async function removeCartItem(formData: FormData) {
   const itemId = itemSchema.safeParse(formData.get("itemId"));
   if (!itemId.success) redirect("/cart?error=invalid");
   const { supabase } = await requireCustomer("/cart");
-  const { error } = await supabase.from("cart_items").delete().eq("id", itemId.data);
+  const { error } = await supabase.rpc("remove_cart_item", { p_cart_item_id: itemId.data });
   if (error) {
     console.error("Cart item removal failed:", error.message);
     redirect("/cart?error=save");
@@ -61,21 +45,10 @@ export async function setCartQuantity(formData: FormData) {
   const parsed = z.object({ itemId: z.string().uuid(), quantity: z.coerce.number().int().min(1) }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/cart?error=invalid");
   const { supabase } = await requireCustomer("/cart");
-  const { data: item } = await supabase.from("cart_items").select("id,product_id,variant_id").eq("id", parsed.data.itemId).maybeSingle();
-  if (!item) redirect("/cart?error=unavailable");
-  const { data: product } = await supabase.from("products").select("stock_quantity,is_active").eq("id", item.product_id).maybeSingle();
-  if (!product?.is_active) redirect("/cart?error=unavailable");
-  let available = product.stock_quantity;
-  if (item.variant_id) {
-    const { data: variant } = await supabase.from("product_variants").select("stock_quantity").eq("id", item.variant_id).eq("product_id", item.product_id).maybeSingle();
-    if (!variant) redirect("/cart?error=unavailable");
-    available = variant.stock_quantity;
-  }
-  if (parsed.data.quantity > available) redirect("/cart?error=stock");
-  const { error } = await supabase.from("cart_items").update({ quantity: parsed.data.quantity, updated_at: new Date().toISOString() }).eq("id", parsed.data.itemId);
+  const { error } = await supabase.rpc("set_cart_quantity", { p_cart_item_id: parsed.data.itemId, p_quantity: parsed.data.quantity });
   if (error) {
-    console.error("Cart quantity update failed:", error.message);
-    redirect("/cart?error=save");
+    const reason = error.message.includes("insufficient_stock") ? "stock" : error.message.includes("unavailable") ? "unavailable" : "save";
+    redirect(`/cart?error=${reason}`);
   }
   revalidatePath("/cart");
   revalidatePath("/checkout");

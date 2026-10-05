@@ -1,0 +1,8 @@
+import { useLocalSearchParams } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
+import { Text, View } from "react-native";
+import { Heading, Notice, Page } from "../../components/Screen";
+import { formatNaira } from "../../lib/format";
+import { supabase } from "../../lib/supabase";
+import { useTheme } from "../../lib/theme";
+export default function OrderDetail(){const t=useTheme();const{orderId}=useLocalSearchParams<{orderId:string}>();const q=useQuery({queryKey:["order",orderId],queryFn:async()=>{if(!supabase)throw new Error();const{data,error}=await supabase.from("orders").select("*,order_items(*)").eq("id",orderId).maybeSingle();if(error)throw error;return data;},enabled:Boolean(orderId)});if(q.isLoading)return <Page><Notice>Loading order details…</Notice></Page>;if(q.isError||!q.data)return <Page><Notice error>We could not find this order.</Notice></Page>;const o=q.data;return <Page><Heading eyebrow="Order details">{o.order_number}</Heading><Text style={{color:t.accent}}>{o.status}</Text><View style={{gap:14}}>{o.order_items.map((i:any)=><View key={i.id} style={{borderBottomWidth:1,borderBottomColor:t.border,paddingBottom:12,gap:5}}><Text style={{color:t.text}}>{i.product_name}{i.variant_name?` · ${i.variant_name}`:""}</Text><Text style={{color:t.secondary}}>Qty {i.quantity} · {formatNaira(i.subtotal_kobo)}</Text></View>)}</View><Text style={{color:t.secondary}}>Delivering to {o.delivery_address}, {o.delivery_city}, {o.delivery_state}</Text><Text style={{color:t.text}}>Subtotal  {formatNaira(o.subtotal_kobo)}{"\n"}Delivery  {formatNaira(o.delivery_fee_kobo)}{"\n"}Total  {formatNaira(o.total_kobo)}</Text></Page>;}
