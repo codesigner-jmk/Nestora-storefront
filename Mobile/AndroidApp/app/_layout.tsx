@@ -53,7 +53,7 @@ function AppFrame() {
 
   return <View style={{ flex: 1 }}>
     <Gate />
-    {splashVisible ? <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { zIndex: 1000, elevation: 1000, alignItems: "center", justifyContent: "center", backgroundColor: colorScheme === "dark" ? "#191A16" : "#F8F6F2", transform: [{ translateY: slideY }] }]}>
+    {splashVisible ? <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { zIndex: 1000, elevation: 1000, alignItems: "center", justifyContent: "center", backgroundColor: colorScheme === "dark" ? "#191A16" : "#F8F6F2", transform: [{ translateY: slideY }] }]}>
       <Image source={colorScheme === "dark" ? require("../assets/splash-dark.png") : require("../assets/splash-light.png")} style={{ width: 320, height: 113 }} resizeMode="contain" />
     </Animated.View> : null}
   </View>;

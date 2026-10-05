@@ -74,7 +74,7 @@ export default function Home() {
 
       <View style={{ height: 320, backgroundColor: t.surfaceMuted, justifyContent: "flex-end", overflow: "hidden" }}>
         <Image source={{ uri: hero }} accessibilityLabel="Warm contemporary NESTORA living room" style={{ position: "absolute", width: "100%", height: "100%" }} resizeMode="cover" />
-        <View style={{ ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(22, 23, 19, 0.34)" }} />
+        <View style={{ ...StyleSheet.absoluteFill, backgroundColor: "rgba(22, 23, 19, 0.34)" }} />
         <View style={{ padding: 21, gap: 9 }}>
           <Text style={{ color: "#FFFFFF", fontSize: 10, letterSpacing: 2 }}>THE NESTORA COLLECTION</Text>
           <Text style={{ color: "#FFFFFF", fontFamily: "serif", fontSize: 30, lineHeight: 36 }}>Make room for living.</Text>
